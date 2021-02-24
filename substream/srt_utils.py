@@ -7,7 +7,7 @@ from typing import (
     TextIO,
 )
 
-from substream.speech_utils import (
+from speech_utils import (
     Word,
     read_words,
 )
@@ -56,6 +56,7 @@ def jsonl_to_srt(jsonl_file: TextIO, srt_file: TextIO) -> None:
 
 def _words_to_subtitles(words: Iterable[Word],
                         split_on_pause_gt: float = 1.0,
+                        split_on_length_gt: int = 32,
                         ) -> Iterator[Subtitle]:
     """
     :yields: Iterables of speech_utils.Records (sentence subtitles) split on:
@@ -66,30 +67,46 @@ def _words_to_subtitles(words: Iterable[Word],
     :param split_on_pause_gt: split on pause between words greater than
            this.
     """
+    logger = logging.getLogger('words_to_srt')
+    logger.info(f'Converting words to subtitles. Length per line {split_on_length_gt}')
 
-    # TODO: add split on sentence length > length but only if the resulting
-    #  length would be greater than some_other_threshold etc...
+    allowed_lines = 2
 
     subtitle = []  # a buffer for Words that gets yielded on certain conditions
-    last_word = None  # word from the previous iteration
+    len_line = 0
+    line_index = 0
+
     for word in words:
-        if word['word'].endswith(('.', '?', '!')):
+        add_line = False
+        # Is the length of line more than threshold number of chars
+        # or is sentence ending?
+        if len_line + len(word["word"]) > split_on_length_gt:
+            add_line = True
+        elif word['word'].endswith(('.', '?', '!')):
+            add_line = True
             subtitle.append(word)
-            yield subtitle
-            subtitle = []
-            last_word = None
-            continue
-        if last_word:
-            if word['start_time'] - last_word['end_time'] > split_on_pause_gt:
-                subtitle[-1]['word'] = subtitle[-1]['word'] + ' ...'
+            word = None
+
+        if add_line:
+            # Is already number of lines available for a timecode? (Normally 2 lines)
+            # If yes, add to subtitle list (against a timecode)
+            if line_index + 1 == allowed_lines:
                 yield subtitle
-                word['word'] = '... ' + word['word']
-                subtitle = [word]
-                last_word = None
-                continue
-        subtitle.append(word)
-        last_word = word
-    if subtitle:
+                subtitle = []
+                len_line = 0
+                line_index = 0
+            else:
+                # Another line is possible. Add a newline character
+                subtitle[-1]['word'] = subtitle[-1]['word'] + "\r\n"
+                len_line = 0
+                line_index = line_index + 1
+
+        if word is not None:
+            word['word'] = word['word'] + ' '
+            len_line = len_line + len(word['word'])
+            subtitle.append(word)
+
+    if subtitle and len(subtitle) > 0:
         yield subtitle
 
 
@@ -137,7 +154,7 @@ def _write_srt(subtitles: Iterable[Subtitle],
     for i, fragment in enumerate(subtitles):
         srt_start_time = _srt_fmt_time(fragment[0]['start_time'])
         srt_end_time = _srt_fmt_time(fragment[-1]['end_time'])
-        sentence = ' '.join(record['word'] for record in fragment)
+        sentence = ''.join(record['word'] for record in fragment)
 
         srt_file.write(str(i + 1) + '\n')
         srt_file.write(srt_start_time + ' --> ' + srt_end_time + '\n')

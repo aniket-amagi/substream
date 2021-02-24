@@ -2,17 +2,17 @@ import logging
 import os
 import time
 
-from substream.speech_utils import audio_to_words
-from substream.srt_utils import (
+from speech_utils import audio_to_words
+from srt_utils import (
     words_to_srt, jsonl_to_srt
 )
-from substream.tempbucket import TemporaryBucket
+from tempbucket import TemporaryBucket
 
 __all__ = ['main', 'cli_main']
 
 
 def main(filename_or_gs_path: str, srt_filename,
-         language_code='en-US') -> None:
+         language_code='en-US', speech_contexts_file=None, profanity_filter=True) -> None:
     """
     Substream python main
 
@@ -40,7 +40,9 @@ def main(filename_or_gs_path: str, srt_filename,
                     audio_to_words(
                         filename_or_gs_path,
                         language_code=language_code,
-                        jsonl_dump_file=json_file),
+                        jsonl_dump_file=json_file,
+                        speech_contexts_file=speech_contexts_file,
+                        profanity_filter=profanity_filter),
                     srt_file)
         elif os.path.isfile(filename_or_gs_path):
             if filename_or_gs_path.endswith('.jsonl'):
@@ -79,7 +81,8 @@ def main(filename_or_gs_path: str, srt_filename,
 
 def cli_main():
     import argparse
-    import substream
+
+    print("cli_main")
 
     ap = argparse.ArgumentParser(
         description='Transcribes an audio file or .jsonl dump to .srt using the '
@@ -98,10 +101,20 @@ def cli_main():
         dest='srt_filename',
         required=True)
     ap.add_argument(
+        '-c', '--context',
+        help='.json filename',
+        default=None,
+        dest='speech_contexts_filename',
+        required=False)
+    ap.add_argument(
         '--language',
         help='https://cloud.google.com/speech-to-text/docs/languages',
         default='en-US',
         dest='code')
+    ap.add_argument(
+        '-p', '--profanity',
+        help='profanity filter',
+        action='store_true')
     ap.add_argument(
         '-v', '--verbose',
         help='extra logging',
@@ -114,7 +127,13 @@ def cli_main():
     else:
         logging.basicConfig(level=logging.INFO)
 
-    substream.main(
+    main(
         args.input, args.srt_filename,
         language_code=args.code,
+        speech_contexts_file=args.speech_contexts_filename,
+        profanity_filter=args.profanity
     )
+
+
+if __name__ == "__main__":
+    cli_main()

@@ -31,6 +31,8 @@ def audio_to_words(gs_path: Text,
                    language_code='en-US',
                    credentials=None,
                    jsonl_dump_file=None,
+                   speech_contexts_file=None,
+                   profanity_filter=True,
                    ) -> Iterator[Word]:
     """
     :yields: Word objects with word timing information
@@ -43,14 +45,31 @@ def audio_to_words(gs_path: Text,
     logger = logging.getLogger('audio_to_words')
 
     _, ext = os.path.splitext(urllib.parse.urlparse(gs_path).path)
-    config = types.RecognitionConfig(
-        encoding=_detect_audio_encoding(ext),
-        language_code=language_code,
-        model='video',
-        profanity_filter=False,
-        enable_word_time_offsets=True,
-        enable_automatic_punctuation=True,
-    )
+
+    speech_contexts = None
+    if speech_contexts_file is not None:
+        speech_contexts = _load_json(speech_contexts_file)
+
+    config = None
+    if speech_contexts is None:
+        config = types.RecognitionConfig(
+            encoding=_detect_audio_encoding(ext),
+            language_code=language_code,
+            model='video',
+            profanity_filter=profanity_filter,
+            enable_word_time_offsets=True,
+            enable_automatic_punctuation=True,
+        )
+    else:
+        config = types.RecognitionConfig(
+            encoding=_detect_audio_encoding(ext),
+            language_code=language_code,
+            model='video',
+            profanity_filter=profanity_filter,
+            enable_word_time_offsets=True,
+            enable_automatic_punctuation=True,
+            speech_contexts=speech_contexts
+        )
     client = speech.SpeechClient(credentials=credentials)
 
     logger.info(f'Starting transcription of {gs_path} '
@@ -64,7 +83,7 @@ def audio_to_words(gs_path: Text,
 
     def poll_operation():
         while not operation.done():
-            logger.info('Still running...')
+            # logger.info('Still running...')
             # TODO: Re-enable when progress_report actually works.
             # logger.info('{operation.metadata.progress_percent}% Complete.')
             time.sleep(5)
@@ -176,3 +195,9 @@ def _dump_words(words: Iterable[Word], json_file: TextIO,
     for word in words:
         json_file.write(json.dumps(word) + '\n')
         yield word
+
+
+def _load_json(filename):
+    with open(filename) as file:
+        return json.load(file)
+    return None

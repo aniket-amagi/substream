@@ -3,3 +3,4 @@ dist/
 secret/
 substream.egg-info/
 venv/
+.idea
