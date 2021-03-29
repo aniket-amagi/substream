@@ -17,17 +17,17 @@ from google.cloud import exceptions
 from google.cloud import speech
 
 # sample_word = {
-#     'word': (word as Text),
-#     'start_time': (time in seconds as float),
-#     'end_time': (time in seconds as float),
+#     "word": (word as Text),
+#     "start_time": (time in seconds as float),
+#     "end_time": (time in seconds as float),
 # }  # type: Word
 Word = MutableMapping[Text, Any]
 
-__all__ = ['Word', 'audio_to_words', 'read_words']
+__all__ = ["Word", "audio_to_words", "read_words"]
 
 
 def audio_to_words(gs_path: Text,
-                   language_code='en-US',
+                   language_code="en-US",
                    credentials=None,
                    jsonl_dump_file=None,
                    speech_contexts_file=None,
@@ -45,7 +45,7 @@ def audio_to_words(gs_path: Text,
     :param profanity_filter: ??
     :param model: which type of model to be used against audio (https://cloud.google.com/speech-to-text/docs/basics#select-model)
     """
-    logger = logging.getLogger('audio_to_words')
+    logger = logging.getLogger("audio_to_words")
 
     _, ext = os.path.splitext(urllib.parse.urlparse(gs_path).path)
 
@@ -76,49 +76,49 @@ def audio_to_words(gs_path: Text,
     client = speech.SpeechClient(credentials=credentials)
     audio = speech.RecognitionAudio(uri=gs_path)
 
-    logger.info(f'Starting transcription of {gs_path} '
-                f'using language {language_code}.')
+    logger.info(f"Starting transcription of {gs_path} "
+                f"using language {language_code}.")
     operation = client.long_running_recognize(
         config=config, audio=audio)
 
-    # Google doesn't implement a bunch of stuff on the specific audio long
+    # Google doesn"t implement a bunch of stuff on the specific audio long
     # running operation, but the operation api supports all of this. When
     # they implement it, all this /may/ just work, only needing a new msg.
 
     def poll_operation():
         while not operation.done():
-            # logger.info('Still running...')
+            # logger.info("Still running...")
             # TODO: Re-enable when progress_report actually works.
-            # logger.info('{operation.metadata.progress_percent}% Complete.')
+            # logger.info("{operation.metadata.progress_percent}% Complete.")
             time.sleep(5)
 
     try:
         poll_operation()
     except KeyboardInterrupt:
-        logger.warning('Caught interrupt. Requesting cancellation.')
+        logger.warning("Caught interrupt. Requesting cancellation.")
         try:
             operation.cancel()
             if not operation.cancelled():
-                logger.warning('Operation not cancelled.')
+                logger.warning("Operation not cancelled.")
         except exceptions.MethodNotImplemented:
             logger.error(f"Cancellation not yet fully implemented by long running API. : {traceback.format_exc()}")
         logger.warning(
-            'Waiting for results...  Send interrupt a second time to kill the '
-            'program and destroy the temporary storage bucket. ***Whether this '
-            'destruction cancels the long running recognition job is untested.***')
+            "Waiting for results...  Send interrupt a second time to kill the "
+            "program and destroy the temporary storage bucket. ***Whether this "
+            "destruction cancels the long running recognition job is untested.***")
         logger.warning(
             "It is recommended to wait if you care about the results.")
     poll_operation()  # once more, (if there was a first attempt at cancellation
     # the job might not be done, but we want to avoid putting it above since an
-    # unexpected error will say it's "while handling KeyboardInterrupt" and
-    # that's a confusing error message.
+    # unexpected error will say it"s "while handling KeyboardInterrupt" and
+    # that"s a confusing error message.
 
     response = operation.result()  # this blocks, waiting for the result from G
-    logger.info('Recognition complete.')
+    logger.info("Recognition complete.")
     if not response.results:
         raise RuntimeError(
-            f'Got no results for file using language {language_code}')
-    logger.debug('Yielding word timings from results...')
+            f"Got no results for file using language {language_code}")
+    logger.debug("Yielding word timings from results...")
 
     words = _results_to_words(response.results)  # type: Iterator[Word]
 
@@ -133,21 +133,20 @@ def _detect_audio_encoding(ext):
     guesses a Google speech.enums.RecognitionConfig.AudioEncoding from a file
     extension.
 
-    :param ext: file extension as str with the leading '.' (eg. '.flac')
+    :param ext: file extension as str with the leading "." (eg. ".flac")
     :returns: enum from speech.enums.RecognitionConfig.AudioEncoding
     """
     # TODO: add a proper library to do this and maybe convert from more formats.
     #  One necessarily exists.
-    #  Justification: uploading files that aren't audio will still cost money
+    #  Justification: uploading files that aren"t audio will still cost money
     #   so it makes sense to check before upload if a file is valid audio.
-    if ext == '.flac':
+    if ext == ".flac":
         encoding = speech.RecognitionConfig.AudioEncoding.FLAC
-    elif ext == '.opus':
+    elif ext == ".opus":
         encoding = speech.RecognitionConfig.AudioEncoding.OGG_OPUS
     else:
-        logger = logging.getLogger('detect_audio_encoding')
-        logger.warning(
-            f'Cannot detect audio encoding from extension "{ext}".')
+        logger = logging.getLogger("detect_audio_encoding")
+        logger.warning(f'Cannot detect audio encoding from extension "{ext}".')
         encoding = speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED
     return encoding
 
@@ -168,10 +167,10 @@ def _results_to_words(results: Iterable) -> Iterator[Word]:
 
         for word in alternative.words:
             yield {
-                'word': word.word,
-                'start_time': float(word.start_time.seconds) +
+                "word": word.word,
+                "start_time": float(word.start_time.seconds) +
                               word.start_time.microseconds / 1000000000,
-                'end_time': float(word.end_time.seconds) +
+                "end_time": float(word.end_time.seconds) +
                             word.end_time.microseconds / 1000000000,
             }  # type: Word
 
@@ -195,7 +194,7 @@ def _dump_words(words: Iterable[Word], json_file: TextIO,
     :arg json_file: a .jsonl file object in text mode
     """
     for word in words:
-        json_file.write(json.dumps(word) + '\n')
+        json_file.write(json.dumps(word) + "\n")
         yield word
 
 
