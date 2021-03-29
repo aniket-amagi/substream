@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+import traceback
 import urllib.parse
 from typing import (
     Any,
@@ -31,6 +32,7 @@ def audio_to_words(gs_path: Text,
                    jsonl_dump_file=None,
                    speech_contexts_file=None,
                    profanity_filter=True,
+                   model="video",
                    ) -> Iterator[Word]:
     """
     :yields: Word objects with word timing information
@@ -39,6 +41,9 @@ def audio_to_words(gs_path: Text,
     :param language_code: language code to try
     :param credentials: credentials to pass to SpeechClient and storage.Client
     :param jsonl_dump_file: .jsonl file to dump word timings to as Words
+    :param speech_contexts_file: ??
+    :param profanity_filter: ??
+    :param model: which type of model to be used against audio (https://cloud.google.com/speech-to-text/docs/basics#select-model)
     """
     logger = logging.getLogger('audio_to_words')
 
@@ -53,7 +58,7 @@ def audio_to_words(gs_path: Text,
         config = speech.RecognitionConfig(
             encoding=_detect_audio_encoding(ext),
             language_code=language_code,
-            model='video',
+            model=model,
             profanity_filter=profanity_filter,
             enable_word_time_offsets=True,
             enable_automatic_punctuation=True
@@ -62,7 +67,7 @@ def audio_to_words(gs_path: Text,
         config = speech.RecognitionConfig(
             encoding=_detect_audio_encoding(ext),
             language_code=language_code,
-            model='video',
+            model=model,
             profanity_filter=profanity_filter,
             enable_word_time_offsets=True,
             enable_automatic_punctuation=True,
@@ -95,10 +100,8 @@ def audio_to_words(gs_path: Text,
             operation.cancel()
             if not operation.cancelled():
                 logger.warning('Operation not cancelled.')
-        except exceptions.MethodNotImplemented as err:
-            logger.error(
-                'Cancellation not yet fully implemented by long running API.',
-                err)
+        except exceptions.MethodNotImplemented:
+            logger.error(f"Cancellation not yet fully implemented by long running API. : {traceback.format_exc()}")
         logger.warning(
             'Waiting for results...  Send interrupt a second time to kill the '
             'program and destroy the temporary storage bucket. ***Whether this '
@@ -199,4 +202,3 @@ def _dump_words(words: Iterable[Word], json_file: TextIO,
 def _load_json(filename):
     with open(filename) as file:
         return json.load(file)
-    return None
