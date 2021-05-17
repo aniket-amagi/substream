@@ -12,10 +12,11 @@ __all__ = ["main", "cli_main"]
 
 
 def main(filename_or_gs_path: str, srt_filename,
-         language_code="en-US", speech_contexts_file=None, profanity_filter=True, model="video") -> None:
+         language_code="en-US", speech_contexts_file=None, profanity_filter=True, model="video", case="Normal") -> None:
     """
     Substream python main
 
+    :param case: Type case of subtitle
     :param profanity_filter: ??
     :param speech_contexts_file: ??
     :param model : google provided model type
@@ -46,13 +47,13 @@ def main(filename_or_gs_path: str, srt_filename,
                         jsonl_dump_file=json_file,
                         speech_contexts_file=speech_contexts_file,
                         profanity_filter=profanity_filter,
-                        model=model),
+                        model=model,
+                        case=case),
                     srt_file)
         elif os.path.isfile(filename_or_gs_path):
             if filename_or_gs_path.endswith(".jsonl"):
                 with open(filename_or_gs_path) as json_file:
-                    logger.info(
-                        f"Converting {json_file.name} to {srt_file.name}")
+                    logger.info(f"Converting {json_file.name} to {srt_file.name}")
                     jsonl_to_srt(json_file, srt_file)
             else:
                 # Trying audio file. Open json for writing, create a temporary
@@ -73,7 +74,8 @@ def main(filename_or_gs_path: str, srt_filename,
                             gs_path,
                             language_code=language_code,
                             jsonl_dump_file=json_file,
-                            model=model),
+                            model=model,
+                            case=case),
                         srt_file)
         else:
             val_err = True
@@ -127,7 +129,11 @@ def cli_main():
     ap.add_argument(
         "-m", "--model",
         help="audio model(https://cloud.google.com/speech-to-text/docs/basics#select-model)")
-
+    ap.add_argument(
+        "-c", "--case",
+        help="to change the case of the caption (options : Normal(default value), Upper, Lower)",
+        default="Normal",
+    )
     args = ap.parse_args()
 
     if args.verbose:
@@ -140,7 +146,8 @@ def cli_main():
         language_code=args.code,
         speech_contexts_file=args.speech_contexts_filename,
         profanity_filter=args.profanity,
-        model=args.model
+        model=args.model,
+        case=args.case
     )
 
 
