@@ -33,7 +33,7 @@ def audio_to_words(gs_path: Text,
                    speech_contexts_file=None,
                    profanity_filter=True,
                    model="video",
-                   case="Normal"
+                   word_case="Normal"
                    ) -> Iterator[Word]:
     """
     :yields: Word objects with word timing information
@@ -45,7 +45,7 @@ def audio_to_words(gs_path: Text,
     :param speech_contexts_file: ??
     :param profanity_filter: ??
     :param model: which type of model to be used against audio (https://cloud.google.com/speech-to-text/docs/basics#select-model)
-    :param case: type casing of subtitles
+    :param word_case: type casing of subtitles
 
     """
     logger = logging.getLogger("audio_to_words")
@@ -123,7 +123,7 @@ def audio_to_words(gs_path: Text,
             f"Got no results for file using language {language_code}")
     logger.debug("Yielding word timings from results...")
 
-    words = _results_to_words(response.results, case)  # type: Iterator[Word]
+    words = _results_to_words(response.results, word_case)  # type: Iterator[Word]
 
     if jsonl_dump_file:
         words = _dump_words(words, jsonl_dump_file)  # type: Iterator[Word]
@@ -154,7 +154,7 @@ def _detect_audio_encoding(ext):
     return encoding
 
 
-def _results_to_words(results: Iterable, case: str) -> Iterator[Word]:
+def _results_to_words(results: Iterable, word_case: str) -> Iterator[Word]:
     """
     :yields: a srt_utils.Word for every result in the input Iterable.
     :param results: results from google, (eg. from operation.result().results)
@@ -169,11 +169,11 @@ def _results_to_words(results: Iterable, case: str) -> Iterator[Word]:
             continue
 
         for word in alternative.words:
-            if case == "Normal":
+            if word_case == "Normal":
                 word = word.word
-            elif case == "Upper":
+            elif word_case == "Upper":
                 word = word.word.upper()
-            elif case == "Lower":
+            elif word_case == "Lower":
                 word = word.word.lower()
             yield {
                 "word": word,

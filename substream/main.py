@@ -12,11 +12,11 @@ __all__ = ["main", "cli_main"]
 
 
 def main(filename_or_gs_path: str, srt_filename,
-         language_code="en-US", speech_contexts_file=None, profanity_filter=True, model="video", case="Normal") -> None:
+         language_code="en-US", speech_contexts_file=None, profanity_filter=True, model="video", word_case="Normal") -> None:
     """
     Substream python main
 
-    :param case: Type case of subtitle
+    :param word_case: Type case of subtitle
     :param profanity_filter: ??
     :param speech_contexts_file: ??
     :param model : google provided model type
@@ -48,7 +48,7 @@ def main(filename_or_gs_path: str, srt_filename,
                         speech_contexts_file=speech_contexts_file,
                         profanity_filter=profanity_filter,
                         model=model,
-                        case=case),
+                        word_case=word_case),
                     srt_file)
         elif os.path.isfile(filename_or_gs_path):
             if filename_or_gs_path.endswith(".jsonl"):
@@ -75,7 +75,7 @@ def main(filename_or_gs_path: str, srt_filename,
                             language_code=language_code,
                             jsonl_dump_file=json_file,
                             model=model,
-                            case=case),
+                            word_case=word_case),
                         srt_file)
         else:
             val_err = True
@@ -130,7 +130,7 @@ def cli_main():
         "-m", "--model",
         help="audio model(https://cloud.google.com/speech-to-text/docs/basics#select-model)")
     ap.add_argument(
-        "-c", "--case",
+        "-wc", "--word_case",
         help="to change the case of the caption (options : Normal(default value), Upper, Lower)",
         default="Normal",
     )
@@ -147,7 +147,7 @@ def cli_main():
         speech_contexts_file=args.speech_contexts_filename,
         profanity_filter=args.profanity,
         model=args.model,
-        case=args.case
+        word_case=args.word_case
     )
 
 
