@@ -33,7 +33,7 @@ def audio_to_words(gs_path: Text,
                    speech_contexts_file=None,
                    profanity_filter=True,
                    model="video",
-                   word_case="Normal"
+                   word_case="normal"
                    ) -> Iterator[Word]:
     """
     :yields: Word objects with word timing information
@@ -169,14 +169,14 @@ def _results_to_words(results: Iterable, word_case: str) -> Iterator[Word]:
             continue
 
         for word in alternative.words:
-            if word_case == "Normal":
-                word = word.word
-            elif word_case == "Upper":
-                word = word.word.upper()
-            elif word_case == "Lower":
-                word = word.word.lower()
+            if word_case == "normal":
+                text_word = word.word
+            elif word_case == "upper":
+                text_word = word.word.upper()
+            elif word_case == "lower":
+                text_word = word.word.lower()
             yield {
-                "word": word,
+                "word": text_word,
                 "start_time": float(word.start_time.seconds) +
                               word.start_time.microseconds / 1000000000,
                 "end_time": float(word.end_time.seconds) +

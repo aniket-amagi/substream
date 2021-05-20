@@ -12,7 +12,8 @@ __all__ = ["main", "cli_main"]
 
 
 def main(filename_or_gs_path: str, srt_filename,
-         language_code="en-US", speech_contexts_file=None, profanity_filter=True, model="video", word_case="Normal") -> None:
+         language_code="en-US", speech_contexts_file=None, profanity_filter=True, model="video",
+         word_case="Normal") -> None:
     """
     Substream python main
 
@@ -131,8 +132,8 @@ def cli_main():
         help="audio model(https://cloud.google.com/speech-to-text/docs/basics#select-model)")
     ap.add_argument(
         "-wc", "--word_case",
-        help="to change the case of the caption (options : Normal(default value), Upper, Lower)",
-        default="Normal",
+        help="to change the case of the caption (options : normal(default value), upper, lower)",
+        default="normal",
     )
     args = ap.parse_args()
 
