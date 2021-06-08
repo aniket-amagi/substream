@@ -129,7 +129,8 @@ def cli_main():
         action="store_true")
     ap.add_argument(
         "-m", "--model",
-        help="audio model(https://cloud.google.com/speech-to-text/docs/basics#select-model)")
+        help="audio model(https://cloud.google.com/speech-to-text/docs/basics#select-model)",
+        default="video")
     ap.add_argument(
         "-wc", "--word_case",
         help="to change the case of the caption (options : normal(default value), upper, lower)",
